@@ -64,11 +64,14 @@ SongParser::SongParser(Song& s) try:
 		f.seekg(0);
 		std::vector<char> data(size);
 		if (!f.read(&data[0], size)) throw SongParserException(s, "Unexpected I/O error", 0);
+    /*
 		if (smCheck(data)) type = SM;
 		else if (txtCheck(data)) type = TXT;
 		else if (iniCheck(data)) type = INI;
 		else if (xmlCheck(data)) type = XML;
 		else throw SongParserException(s, "Does not look like a song file (wrong header)", 1, true);
+    */
+    type = TXT;
 		m_ss.write(&data[0], size);
 	}
 	// Convert m_ss; filename supplied for possible warning messages
