@@ -69,12 +69,7 @@ SongParser::SongParser(Song& s) try:
 		else if (txtCheck(data)) type = TXT;
 		else if (iniCheck(data)) type = INI;
 		else if (xmlCheck(data)) type = XML;
-		else {
-			type = TXT;
-			std::clog << "songparser/warning: could not recognize song file - assume TXT" << std::endl;
-			// throw SongParserException(s, "Does not look like a song file (wrong header)", 1, true);
-		}
-    
+		else throw SongParserException(s, "Does not look like a song file (wrong header)", 1, true); 
 		m_ss.write(&data[0], size);
 	}
 	// Convert m_ss; filename supplied for possible warning messages
