@@ -128,11 +128,13 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 	// Draw a star for well sung notes
 	for (auto it = m_songit; it != m_vocal.notes.end() && it->begin < m_time - (baseLine - 0.5) / pixUnit; ++it) {
 		float player_star_offset = 0;
+		int player_offset = 0;
 		for (std::vector<Color>::const_iterator it_col = it->stars.begin(); it_col != it->stars.end(); ++it_col) {
 			double x = m_baseX + it->begin * pixUnit + m_noteUnit; // left x coordinate: begin minus border (side borders -noteUnit wide)
 			double w = (it->end - it->begin) * pixUnit - m_noteUnit * 2.0; // width: including borders on both sides
 			float hh = -m_noteUnit;
 			float centery = m_baseY + (it->note + 0.4) * m_noteUnit; // Star is 0.4 notes higher than current note
+			centery = centery - 0.08 + 0.08 * player_offset;
 			float centerx = x + w - (player_star_offset + 1.2) * hh; // Star is 1.2 units from end
 			float rot = fmod(time * 5.0, 2.0 * M_PI); // They rotate!
 			bool smallerNoteGraph = ((position == NoteGraph::TOP) || (position == NoteGraph::BOTTOM));
@@ -145,6 +147,7 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 			}
 			m_star.draw(Dimensions().stretch(zoom, zoom).center().middle(), TexCoords());
 			player_star_offset += 0.8;
+			++player_offset;
 		}
 	}
 }
