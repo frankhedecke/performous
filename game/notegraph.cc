@@ -205,7 +205,9 @@ namespace {
 void NoteGraph::drawWaves(Database const& database) {
 	if (m_vocal.notes.empty()) return; // Cannot draw without notes
 	UseTexture tblock(m_wave);
+	int player_offset = 0;
 	for (auto const& player: database.cur) {
+		++player_offset;
 		if (player.m_vocal.name != m_vocal.name)
 			continue;
 		float const texOffset = 2.0 * m_time; // Offset for animating the wave texture
@@ -242,7 +244,7 @@ void NoteGraph::drawWaves(Database const& database) {
 			// Now val contains the active note value. The following calculates note value for current freq:
 			val += Note::diff(val, MusicalScale(m_vocal.scale).setFreq(freq).getNote());
 			// Graphics positioning & animation:
-			double y = m_baseY + val * m_noteUnit;
+			double y = m_baseY - 0.16 + 0.08 * player_offset + val * m_noteUnit;
 			double thickness = clamp(1.0 + pitch[idx].second / 60.0) + 0.5;
 			thickness *= 1.0 + 0.2 * std::sin(tex - 2.0 * texOffset); // Further animation :)
 			thickness *= -m_noteUnit;
