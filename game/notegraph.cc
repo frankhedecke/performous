@@ -155,12 +155,16 @@ void NoteGraph::drawNotes() {
 	for (auto it = m_songit; it != m_vocal.notes.end() && it->begin < m_time - (baseLine - 0.5) / pixUnit; ++it) {
 		if (it->type == Note::SLEEP) continue;
 		double alpha = it->power;
-		Texture* t1;
 		Texture* t2;
+		Texture* t_note1;
+		Texture* t_note2;
+		Texture* t_note3;
 		switch (it->type) {
-		  case Note::NORMAL: case Note::SLIDE: t1 = &m_notebar; t2 = &m_notebar_hl; break;
-		  case Note::GOLDEN: t1 = &m_notebargold; t2 = &m_notebargold_hl; break;
-		  case Note::FREESTYLE:  // Freestyle notes use custom handling
+			case Note::NORMAL: case Note::SLIDE: t2 = &m_notebar_hl; 
+					t_note1 = &m_notebar; t_note2 = &m_notebar; t_note3 = &m_notebar; break;
+			case Note::GOLDEN: t2 = &m_notebargold_hl;
+					t_note1 = &m_notebargold; t_note2 = &m_notebargold; t_note3 = &m_notebargold; break;
+			case Note::FREESTYLE:  // Freestyle notes use custom handling
 			{
 				Dimensions dim;
 				dim.middle(m_baseX + 0.5 * (it->begin + it->end) * pixUnit).center(m_baseY + it->note * m_noteUnit).stretch((it->end - it->begin) * pixUnit, -m_noteUnit * 12.0);
@@ -179,7 +183,9 @@ void NoteGraph::drawNotes() {
 		double yend = m_baseY + (it->note + 1) * m_noteUnit; // top y coordinate (on the one higher note line)
 		double w = (it->end - it->begin) * pixUnit - m_noteUnit * 2.0; // width: including borders on both sides
 		double h = -m_noteUnit * 2.0; // height: 0.5 border + 1.0 bar + 0.5 border = 2.0
-		drawNotebar(*t1, x, ybeg, yend, w, h);
+		drawNotebar(*t_note1, x, ybeg - 0.08f, yend - 0.08f, w, h);
+		drawNotebar(*t_note2, x, ybeg, yend, w, h);
+		drawNotebar(*t_note3, x, ybeg + 0.08f, yend + 0.08f, w, h); 
 		if (alpha > 0.0) {
 			ColorTrans c(Color::alpha(alpha));
 			drawNotebar(*t2, x, ybeg, yend, w, h);
