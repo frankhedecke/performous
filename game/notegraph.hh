@@ -31,6 +31,9 @@ class NoteGraph {
 	Texture m_star;
 	Texture m_star_hl;
 	Texture m_notebar;
+	Texture m_notebar_blue;
+	Texture m_notebar_red;
+	Texture m_notebar_green;
 	Texture m_notebar_hl;
 	Texture m_notebarfs;
 	Texture m_notebarfs_hl;
