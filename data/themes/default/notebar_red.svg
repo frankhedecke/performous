@@ -25,7 +25,7 @@
     <linearGradient
        id="linearGradient2388">
       <stop
-         style="stop-color:#b4e7e7;stop-opacity:1;"
+         style="stop-color:#ff8080;stop-opacity:1;"
          offset="0"
          id="stop2390" />
       <stop
@@ -78,7 +78,7 @@
      style="opacity:1"
      transform="translate(-255.99998,-508.36216)">
     <rect
-       style="fill:#f2f2f2;fill-opacity:0.50196081;stroke:#d00000;stroke-width:3;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#ff8080;fill-opacity:0.70;stroke:#d00000;stroke-width:3;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect2382"
        width="62"
        height="30"
