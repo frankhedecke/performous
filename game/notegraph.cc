@@ -8,17 +8,17 @@
 Dimensions dimensions; // Make a public member variable
 
 NoteGraph::NoteGraph(VocalTrack const& vocal):
-  m_vocal(vocal),
-  m_notelines(findFile("notelines.svg")), m_wave(findFile("wave.png")),
-  m_star(findFile("star.svg")), m_star_hl(findFile("star_glow.svg")),
-  m_notebar(findFile("notebar.svg")), 
-  m_notebar_blue(findFile("notebar_blue.svg")), m_notebar_blue_gold(findFile("notebar_blue_gold.svg")),
-  m_notebar_red(findFile("notebar_red.svg")), m_notebar_red_gold(findFile("notebar_red_gold.svg")), 
-  m_notebar_green(findFile("notebar_green.svg")), m_notebar_green_gold(findFile("notebar_green_gold.svg")), 
-  m_notebar_hl(findFile("notebar_hi.svg")),
-  m_notebarfs(findFile("notebarfs.svg")), m_notebarfs_hl(findFile("notebarfs-hl.png")),
-  m_notebargold(findFile("notebargold.svg")), m_notebargold_hl(findFile("notebargold_hi.svg")),
-  m_notealpha(0.0f), m_nlTop(0.0, 4.0), m_nlBottom(0.0, 4.0), m_time()
+	m_vocal(vocal),
+	m_notelines(findFile("notelines.svg")), m_wave(findFile("wave.png")),
+	m_star(findFile("star.svg")), m_star_hl(findFile("star_glow.svg")),
+	m_notebar(findFile("notebar.svg")), 
+	m_notebar_blue(findFile("notebar_blue.svg")), m_notebar_blue_gold(findFile("notebar_blue_gold.svg")),
+	m_notebar_red(findFile("notebar_red.svg")), m_notebar_red_gold(findFile("notebar_red_gold.svg")), 
+	m_notebar_green(findFile("notebar_green.svg")), m_notebar_green_gold(findFile("notebar_green_gold.svg")), 
+	m_notebar_hl(findFile("notebar_hi.svg")),
+	m_notebarfs(findFile("notebarfs.svg")), m_notebarfs_hl(findFile("notebarfs-hl.png")),
+	m_notebargold(findFile("notebargold.svg")), m_notebargold_hl(findFile("notebargold_hi.svg")),
+	m_notealpha(0.0f), m_nlTop(0.0, 4.0), m_nlBottom(0.0, 4.0), m_time()
 {
 	dimensions.stretch(1.0, 0.5); // Initial dimensions, probably overridden from somewhere
 	m_nlTop.setTarget(m_vocal.noteMax, true);
@@ -162,14 +162,14 @@ void NoteGraph::drawNotes() {
 	for (auto it = m_songit; it != m_vocal.notes.end() && it->begin < m_time - (baseLine - 0.5) / pixUnit; ++it) {
 		if (it->type == Note::SLEEP) continue;
 		double alpha = it->power;
-		Texture* t2;
+		Texture* t_note_hl;
 		Texture* t_note1;
 		Texture* t_note2;
 		Texture* t_note3;
 		switch (it->type) {
-			case Note::NORMAL: case Note::SLIDE: t2 = &m_notebar_hl; 
+			case Note::NORMAL: case Note::SLIDE: t_note_hl = &m_notebar_hl; 
 					t_note1 = &m_notebar_blue; t_note2 = &m_notebar_red; t_note3 = &m_notebar_green; break;
-			case Note::GOLDEN: t2 = &m_notebargold_hl;
+			case Note::GOLDEN: t_note_hl = &m_notebargold_hl;
 					t_note1 = &m_notebar_blue_gold; t_note2 = &m_notebar_red_gold; t_note3 = &m_notebar_green_gold; break;
 			case Note::FREESTYLE:  // Freestyle notes use custom handling
 			{
@@ -195,7 +195,7 @@ void NoteGraph::drawNotes() {
 		drawNotebar(*t_note3, x, ybeg + 0.08f, yend + 0.08f, w, h); 
 		if (alpha > 0.0) {
 			ColorTrans c(Color::alpha(alpha));
-			drawNotebar(*t2, x, ybeg, yend, w, h);
+			drawNotebar(*t_note_hl, x, ybeg, yend, w, h);
 		}
 	}
 }
