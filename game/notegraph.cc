@@ -12,6 +12,7 @@ NoteGraph::NoteGraph(VocalTrack const& vocal):
 	m_notelines(findFile("notelines.svg")), m_wave(findFile("wave.png")),
 	m_star(findFile("star.svg")), m_star_hl(findFile("star_glow.svg")),
 	m_notebar(findFile("notebar.svg")), 
+	m_notebar_std(findFile("notebar_std.svg")), m_notebar_std_gold(findFile("notebar_std_gold.svg")),
 	m_notebar_blue(findFile("notebar_blue.svg")), m_notebar_blue_gold(findFile("notebar_blue_gold.svg")),
 	m_notebar_red(findFile("notebar_red.svg")), m_notebar_red_gold(findFile("notebar_red_gold.svg")), 
 	m_notebar_green(findFile("notebar_green.svg")), m_notebar_green_gold(findFile("notebar_green_gold.svg")), 
@@ -124,7 +125,7 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 
 	ColorTrans c(Color::alpha(m_notealpha));
 
-	drawNotes();
+	drawNotes(database);
 	if (config["game/pitch"].b()) drawWaves(database);
 
 	// Draw a star for well sung notes
@@ -154,7 +155,7 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 	}
 }
 
-void NoteGraph::drawNotes() {
+void NoteGraph::drawNotes(Database const& database) {
 	// Draw note lines
 	m_notelines.draw(Dimensions().stretch(dimensions.w(), (m_max - m_min - 13) * m_noteUnit).middle(dimensions.xc()).center(dimensions.yc()), TexCoords(0.0, (-m_min - 7.0) / 12.0f, 1.0, (-m_max + 6.0) / 12.0f));
 
@@ -162,15 +163,52 @@ void NoteGraph::drawNotes() {
 	for (auto it = m_songit; it != m_vocal.notes.end() && it->begin < m_time - (baseLine - 0.5) / pixUnit; ++it) {
 		if (it->type == Note::SLEEP) continue;
 		double alpha = it->power;
+
+		// TODO use c++11 array OR boost::ptr_array
+		Texture* textures[3];
+		for (int i = 0; i < 3; ++i) {
+			textures[i] = &m_notebar_std;
+		}
+
 		Texture* t_note_hl;
-		Texture* t_note1;
-		Texture* t_note2;
-		Texture* t_note3;
 		switch (it->type) {
-			case Note::NORMAL: case Note::SLIDE: t_note_hl = &m_notebar_hl; 
-					t_note1 = &m_notebar_blue; t_note2 = &m_notebar_red; t_note3 = &m_notebar_green; break;
+			case Note::NORMAL: case Note::SLIDE: 
+			{
+				t_note_hl = &m_notebar_hl; 
+				int player_offset = 0;
+				for (auto player_it = database.cur.begin(); player_it != database.cur.end(); ++player_it) 
+				{    
+					if (player_offset < 3) {
+						Color col = player_it->m_color;
+
+						// guess the color
+						if (col.r > 0.5) { // red + yellow + fuchsia + purple
+							if (col.b > 0.5) { // fuchsia + purple
+							} else { // red + yellow
+								if (col.g > 0.9) textures[player_offset] = &m_notebar_std;
+								else textures[player_offset] = &m_notebar_red;
+							}
+						} else { // blue + green + lightgreen + aqua
+							if (col.b > 0.5) { // blue + aqua
+								if (col.g > 0.9) textures[player_offset] = &m_notebar_std;
+								else textures[player_offset] = &m_notebar_blue;
+							} else { // green + lightgreen
+								if (col.b > 0.2) textures[player_offset] = &m_notebar_std;
+								else textures[player_offset] = &m_notebar_green;
+							}
+						}
+					}
+					++player_offset;
+				}
+				break;
+			}
 			case Note::GOLDEN: t_note_hl = &m_notebargold_hl;
-					t_note1 = &m_notebar_blue_gold; t_note2 = &m_notebar_red_gold; t_note3 = &m_notebar_green_gold; break;
+			{
+				textures[0] = &m_notebar_std_gold;
+				textures[1] = &m_notebar_std_gold;
+				textures[2] = &m_notebar_std_gold;
+				break;
+			}
 			case Note::FREESTYLE:  // Freestyle notes use custom handling
 			{
 				Dimensions dim;
@@ -190,9 +228,10 @@ void NoteGraph::drawNotes() {
 		double yend = m_baseY + (it->note + 1) * m_noteUnit; // top y coordinate (on the one higher note line)
 		double w = (it->end - it->begin) * pixUnit - m_noteUnit * 2.0; // width: including borders on both sides
 		double h = -m_noteUnit * 2.0; // height: 0.5 border + 1.0 bar + 0.5 border = 2.0
-		drawNotebar(*t_note1, x, ybeg - 0.08f, yend - 0.08f, w, h);
-		drawNotebar(*t_note2, x, ybeg, yend, w, h);
-		drawNotebar(*t_note3, x, ybeg + 0.08f, yend + 0.08f, w, h); 
+    
+		drawNotebar(*textures[0], x, ybeg - 0.08f, yend - 0.08f, w, h);
+		drawNotebar(*textures[1], x, ybeg, yend, w, h);
+		drawNotebar(*textures[2], x, ybeg + 0.08f, yend + 0.08f, w, h); 
 		if (alpha > 0.0) {
 			ColorTrans c(Color::alpha(alpha));
 			drawNotebar(*t_note_hl, x, ybeg, yend, w, h);
