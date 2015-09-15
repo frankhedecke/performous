@@ -39,6 +39,16 @@ class NoteGraph {
 	Texture m_notebar_red_gold;
 	Texture m_notebar_green;
 	Texture m_notebar_green_gold;
+	Texture m_notebar_yellow;
+	Texture m_notebar_yellow_gold;
+	Texture m_notebar_fuchsia;
+	Texture m_notebar_fuchsia_gold;
+	Texture m_notebar_lightgreen;
+	Texture m_notebar_lightgreen_gold;
+	Texture m_notebar_purple;
+	Texture m_notebar_purple_gold;
+	Texture m_notebar_aqua;
+	Texture m_notebar_aqua_gold;
 	Texture m_notebar_hl;
 	Texture m_notebarfs;
 	Texture m_notebarfs_hl;

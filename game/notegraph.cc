@@ -16,6 +16,11 @@ NoteGraph::NoteGraph(VocalTrack const& vocal):
 	m_notebar_blue(findFile("notebar_blue.svg")), m_notebar_blue_gold(findFile("notebar_blue_gold.svg")),
 	m_notebar_red(findFile("notebar_red.svg")), m_notebar_red_gold(findFile("notebar_red_gold.svg")), 
 	m_notebar_green(findFile("notebar_green.svg")), m_notebar_green_gold(findFile("notebar_green_gold.svg")), 
+	m_notebar_yellow(findFile("notebar_yellow.svg")), m_notebar_yellow_gold(findFile("notebar_std_gold.svg")),
+	m_notebar_fuchsia(findFile("notebar_fuchsia.svg")), m_notebar_fuchsia_gold(findFile("notebar_std_gold.svg")),
+	m_notebar_lightgreen(findFile("notebar_lightgreen.svg")), m_notebar_lightgreen_gold(findFile("notebar_std_gold.svg")),
+	m_notebar_purple(findFile("notebar_purple.svg")), m_notebar_purple_gold(findFile("notebar_std_gold.svg")),
+	m_notebar_aqua(findFile("notebar_aqua.svg")), m_notebar_aqua_gold(findFile("notebar_std_gold.svg")),
 	m_notebar_hl(findFile("notebar_hi.svg")),
 	m_notebarfs(findFile("notebarfs.svg")), m_notebarfs_hl(findFile("notebarfs-hl.png")),
 	m_notebargold(findFile("notebargold.svg")), m_notebargold_hl(findFile("notebargold_hi.svg")),
@@ -184,16 +189,18 @@ void NoteGraph::drawNotes(Database const& database) {
 						// guess the color
 						if (col.r > 0.5) { // red + yellow + fuchsia + purple
 							if (col.b > 0.5) { // fuchsia + purple
+								if (col.g > 0.3) textures[player_offset] = &m_notebar_fuchsia;
+								else textures[player_offset] = &m_notebar_purple;
 							} else { // red + yellow
-								if (col.g > 0.9) textures[player_offset] = &m_notebar_std;
+								if (col.g > 0.9) textures[player_offset] = &m_notebar_yellow;
 								else textures[player_offset] = &m_notebar_red;
 							}
 						} else { // blue + green + lightgreen + aqua
 							if (col.b > 0.5) { // blue + aqua
-								if (col.g > 0.9) textures[player_offset] = &m_notebar_std;
+								if (col.g > 0.9) textures[player_offset] = &m_notebar_aqua;
 								else textures[player_offset] = &m_notebar_blue;
 							} else { // green + lightgreen
-								if (col.b > 0.2) textures[player_offset] = &m_notebar_std;
+								if (col.b > 0.2) textures[player_offset] = &m_notebar_lightgreen;
 								else textures[player_offset] = &m_notebar_green;
 							}
 						}
