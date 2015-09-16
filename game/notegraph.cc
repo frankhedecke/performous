@@ -16,11 +16,11 @@ NoteGraph::NoteGraph(VocalTrack const& vocal):
 	m_notebar_blue(findFile("notebar_blue.svg")), m_notebar_blue_gold(findFile("notebar_blue_gold.svg")),
 	m_notebar_red(findFile("notebar_red.svg")), m_notebar_red_gold(findFile("notebar_red_gold.svg")), 
 	m_notebar_green(findFile("notebar_green.svg")), m_notebar_green_gold(findFile("notebar_green_gold.svg")), 
-	m_notebar_yellow(findFile("notebar_yellow.svg")), m_notebar_yellow_gold(findFile("notebar_std_gold.svg")),
-	m_notebar_fuchsia(findFile("notebar_fuchsia.svg")), m_notebar_fuchsia_gold(findFile("notebar_std_gold.svg")),
-	m_notebar_lightgreen(findFile("notebar_lightgreen.svg")), m_notebar_lightgreen_gold(findFile("notebar_std_gold.svg")),
-	m_notebar_purple(findFile("notebar_purple.svg")), m_notebar_purple_gold(findFile("notebar_std_gold.svg")),
-	m_notebar_aqua(findFile("notebar_aqua.svg")), m_notebar_aqua_gold(findFile("notebar_std_gold.svg")),
+	m_notebar_yellow(findFile("notebar_yellow.svg")), m_notebar_yellow_gold(findFile("notebar_yellow_gold.svg")),
+	m_notebar_fuchsia(findFile("notebar_fuchsia.svg")), m_notebar_fuchsia_gold(findFile("notebar_fuchsia_gold.svg")),
+	m_notebar_lightgreen(findFile("notebar_lightgreen.svg")), m_notebar_lightgreen_gold(findFile("notebar_lightgreen_gold.svg")),
+	m_notebar_purple(findFile("notebar_purple.svg")), m_notebar_purple_gold(findFile("notebar_purple_gold.svg")),
+	m_notebar_aqua(findFile("notebar_aqua.svg")), m_notebar_aqua_gold(findFile("notebar_aqua_gold.svg")),
 	m_notebar_hl(findFile("notebar_hi.svg")),
 	m_notebarfs(findFile("notebarfs.svg")), m_notebarfs_hl(findFile("notebarfs-hl.png")),
 	m_notebargold(findFile("notebargold.svg")), m_notebargold_hl(findFile("notebargold_hi.svg")),
@@ -211,9 +211,34 @@ void NoteGraph::drawNotes(Database const& database) {
 			}
 			case Note::GOLDEN: t_note_hl = &m_notebargold_hl;
 			{
-				textures[0] = &m_notebar_std_gold;
-				textures[1] = &m_notebar_std_gold;
-				textures[2] = &m_notebar_std_gold;
+				t_note_hl = &m_notebar_hl; 
+				int player_offset = 0;
+				for (auto player_it = database.cur.begin(); player_it != database.cur.end(); ++player_it) 
+				{    
+					if (player_offset < 3) {
+						Color col = player_it->m_color;
+
+						// guess the color
+						if (col.r > 0.5) { // red + yellow + fuchsia + purple
+							if (col.b > 0.5) { // fuchsia + purple
+								if (col.g > 0.3) textures[player_offset] = &m_notebar_fuchsia_gold;
+								else textures[player_offset] = &m_notebar_purple_gold;
+							} else { // red + yellow
+								if (col.g > 0.9) textures[player_offset] = &m_notebar_yellow_gold;
+								else textures[player_offset] = &m_notebar_red_gold;
+							}
+						} else { // blue + green + lightgreen + aqua
+							if (col.b > 0.5) { // blue + aqua
+								if (col.g > 0.9) textures[player_offset] = &m_notebar_aqua_gold;
+								else textures[player_offset] = &m_notebar_blue_gold;
+							} else { // green + lightgreen
+								if (col.b > 0.2) textures[player_offset] = &m_notebar_lightgreen_gold;
+								else textures[player_offset] = &m_notebar_green_gold;
+							}
+						}
+					}
+					++player_offset;
+				}
 				break;
 			}
 			case Note::FREESTYLE:  // Freestyle notes use custom handling
