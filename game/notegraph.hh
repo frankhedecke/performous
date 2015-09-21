@@ -30,7 +30,6 @@ class NoteGraph {
 	Texture m_wave;
 	Texture m_star;
 	Texture m_star_hl;
-	Texture m_notebar;
 	Texture m_notebar_std;
 	Texture m_notebar_std_gold;
 	Texture m_notebar_blue;
@@ -52,7 +51,6 @@ class NoteGraph {
 	Texture m_notebar_hl;
 	Texture m_notebarfs;
 	Texture m_notebarfs_hl;
-	Texture m_notebargold;
 	Texture m_notebargold_hl;
 	float m_notealpha;
 	AnimValue m_nlTop, m_nlBottom;
