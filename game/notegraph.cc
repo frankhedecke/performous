@@ -166,7 +166,6 @@ void NoteGraph::drawNotes(Database const& database) {
 	// Draw notes
 	for (auto it = m_songit; it != m_vocal.notes.end() && it->begin < m_time - (baseLine - 0.5) / pixUnit; ++it) {
 		if (it->type == Note::SLEEP) continue;
-		double alpha = it->power;
 
 		// TODO use c++11 array OR boost::ptr_array
 		Texture* textures[3];
@@ -242,6 +241,7 @@ void NoteGraph::drawNotes(Database const& database) {
 			}
 			case Note::FREESTYLE:  // Freestyle notes use custom handling
 			{
+				double alpha = it->power;
 				Dimensions dim;
 				dim.middle(m_baseX + 0.5 * (it->begin + it->end) * pixUnit).center(m_baseY + it->note * m_noteUnit).stretch((it->end - it->begin) * pixUnit, -m_noteUnit * 12.0);
 				float xoffset = 0.1 * m_time / m_notebarfs.dimensions.ar();
@@ -260,12 +260,24 @@ void NoteGraph::drawNotes(Database const& database) {
 		double w = (it->end - it->begin) * pixUnit - m_noteUnit * 2.0; // width: including borders on both sides
 		double h = -m_noteUnit * 2.0; // height: 0.5 border + 1.0 bar + 0.5 border = 2.0
     
-		drawNotebar(*textures[0], x, ybeg - 0.08f, yend - 0.08f, w, h);
+		drawNotebar(*textures[0], x, ybeg - 0.08, yend - 0.08, w, h);
 		drawNotebar(*textures[1], x, ybeg, yend, w, h);
-		drawNotebar(*textures[2], x, ybeg + 0.08f, yend + 0.08f, w, h); 
-		if (alpha > 0.0) {
-			ColorTrans c(Color::alpha(alpha));
-			drawNotebar(*t_note_hl, x, ybeg, yend, w, h);
+		drawNotebar(*textures[2], x, ybeg + 0.08, yend + 0.08, w, h);
+
+		// TODO fix that all player notes are highligthed, if the main scores
+		int player_offset = 0;
+		double alpha = it->power;
+		double alpha2 = 0.0;
+		for (auto player_it = database.cur.begin(); player_it != database.cur.end(); ++player_it) 
+		{    
+			if (player_offset < 3) {
+				alpha2 = player_it->m_power;
+				if (alpha2 > 0.0 && alpha > 0.0) {
+					ColorTrans c(Color::alpha(alpha2));
+					drawNotebar(*t_note_hl, x, ybeg - 0.08 + player_offset * 0.08, yend - 0.08 + player_offset * 0.08, w, h);
+				}
+			}
+			++player_offset;
 		}
 	}
 }

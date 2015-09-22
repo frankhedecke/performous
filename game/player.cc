@@ -10,7 +10,10 @@ Player::Player(VocalTrack& vocal, Analyzer& analyzer, size_t frames):
 	  m_scoreIt(m_vocal.notes.begin())
 {
 	// Initialize note powers
-	for (Notes::const_iterator it = m_vocal.notes.begin(); it != m_vocal.notes.end(); ++it) it->power = 0.0f;
+	for (Notes::const_iterator it = m_vocal.notes.begin(); it != m_vocal.notes.end(); ++it) {
+		it->power = 0.0f;
+		m_power = 0.0f;
+	}
 	// Assign colors
 	m_color = MicrophoneColor::get(m_analyzer.getId());
 }
@@ -33,6 +36,7 @@ void Player::update() {
 		if (endTime < m_scoreIt->begin) break;  // The note begins later than on this timestep
 		// If tone was detected, calculate score
 		m_scoreIt->power *= std::pow(0.05, m_scoreIt->clampDuration(beginTime, endTime));  // Fade glow
+		m_power *= std::pow(0.05, m_scoreIt->clampDuration(beginTime, endTime));  // Fade glow
 		if (t) {
 			double note = MusicalScale(m_vocal.scale).setFreq(t->freq).getNote();
 			// Add score
@@ -42,6 +46,7 @@ void Player::update() {
 			m_lineScore += score_addition;
 			// Add power if already on the note
 			m_scoreIt->power = std::max(m_scoreIt->power, m_scoreIt->powerFactor(note));
+			m_power = std::max(m_power, m_scoreIt->powerFactor(note));
 		}
 		// If a row of lyrics ends, calculate how well it went
 		if (m_scoreIt->type == Note::SLEEP) {
@@ -57,6 +62,7 @@ void Player::update() {
 		}
 		m_noteScore = 0; // Reset noteScore as we are moving on to the next one
 		m_scoreIt->power = 0.0; // Remove glow
+		m_power = 0.0; // Remove glow
 		++m_scoreIt;
 	}
 	if (m_scoreIt == m_vocal.notes.end()) calcRowRank();

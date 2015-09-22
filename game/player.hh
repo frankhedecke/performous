@@ -25,6 +25,10 @@ struct Player {
 	pitch_t m_pitch;
 	/// current position in pitch vector (first unused spot)
 	size_t m_pos;
+	// FIXME: temporal hack to differenciate the power of each player
+	// doublette in notes.hh
+	/// power of note (how well it is being hit right now
+	double m_power;
 	/// score for current song
 	double m_score;
 	/// score for current note
