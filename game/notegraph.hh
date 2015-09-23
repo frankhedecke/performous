@@ -3,6 +3,7 @@
 #include "animvalue.hh"
 #include "surface.hh"
 #include "notes.hh"
+#include "player.hh"
 
 class Song;
 class Database;
@@ -22,7 +23,7 @@ class NoteGraph {
 	void draw(double time, Database const& database, Position position = NoteGraph::FULLSCREEN);
   private:
 	/// draw notebars
-	void drawNotes(Database const& database);
+	void drawNotes(Database const& database, std::_List_const_iterator<Player> player_it);
 	/// draw waves (what players are singing)
 	void drawWaves(Database const& database);
 	VocalTrack const& m_vocal;
@@ -57,6 +58,6 @@ class NoteGraph {
 	Notes::const_iterator m_songit;
 	double m_time;
 	double m_max, m_min, m_noteUnit, m_baseY, m_baseX;
-
+	int m_cur_player;
 };
 

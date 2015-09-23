@@ -121,6 +121,7 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 	m_noteUnit = -dimensions.h() / std::max(48.0 * dimensions.h(), m_max - m_min);
 	m_baseY = -0.5 * (m_min + m_max) * m_noteUnit + dimensions.yc();
 	m_baseX = baseLine - m_time * pixUnit + dimensions.xc();  // FIXME: Moving in X direction requires additional love (is b0rked now, keep it centered at zero)
+	m_cur_player = 0;
 
 	// Fading notelines handing
 	if (m_songit == m_vocal.notes.end() || m_songit->begin > m_time + 3.0) m_notealpha -= 0.02f;
@@ -129,7 +130,11 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 
 	ColorTrans c(Color::alpha(m_notealpha));
 
-	drawNotes(database);
+	for (auto player_it = database.cur.begin(); player_it != database.cur.end(); ++player_it) {
+		drawNotes(database, player_it);
+		++m_cur_player;
+	}
+
 	if (config["game/pitch"].b()) drawWaves(database);
 
 	// Draw a star for well sung notes
@@ -162,7 +167,7 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 	}
 }
 
-void NoteGraph::drawNotes(Database const& database) {
+void NoteGraph::drawNotes(Database const& database, std::_List_const_iterator<Player> player_it) {
 	// Draw note lines
 	m_notelines.draw(Dimensions().stretch(dimensions.w(), (m_max - m_min - 13) * m_noteUnit).middle(dimensions.xc()).center(dimensions.yc()), TexCoords(0.0, (-m_min - 7.0) / 12.0f, 1.0, (-m_max + 6.0) / 12.0f));
 
@@ -181,64 +186,54 @@ void NoteGraph::drawNotes(Database const& database) {
 			case Note::NORMAL: case Note::SLIDE: 
 			{
 				t_note_hl = &m_notebar_hl; 
-				int player_offset = 0;
-				for (auto player_it = database.cur.begin(); player_it != database.cur.end(); ++player_it) 
-				{    
-					if (player_offset < 3) {
-						Color col = player_it->m_color;
+				if (m_cur_player < 3) {
+					Color col = player_it->m_color;
 
-						// guess the color
-						if (col.r > 0.5) { // red + yellow + fuchsia + purple
-							if (col.b > 0.5) { // fuchsia + purple
-								if (col.g > 0.3) textures[player_offset] = &m_notebar_fuchsia;
-								else textures[player_offset] = &m_notebar_purple;
-							} else { // red + yellow
-								if (col.g > 0.9) textures[player_offset] = &m_notebar_yellow;
-								else textures[player_offset] = &m_notebar_red;
-							}
-						} else { // blue + green + lightgreen + aqua
-							if (col.b > 0.5) { // blue + aqua
-								if (col.g > 0.9) textures[player_offset] = &m_notebar_aqua;
-								else textures[player_offset] = &m_notebar_blue;
-							} else { // green + lightgreen
-								if (col.b > 0.2) textures[player_offset] = &m_notebar_lightgreen;
-								else textures[player_offset] = &m_notebar_green;
-							}
+					// guess the color
+					if (col.r > 0.5) { // red + yellow + fuchsia + purple
+						if (col.b > 0.5) { // fuchsia + purple
+							if (col.g > 0.3) textures[m_cur_player] = &m_notebar_fuchsia;
+							else textures[m_cur_player] = &m_notebar_purple;
+						} else { // red + yellow
+							if (col.g > 0.9) textures[m_cur_player] = &m_notebar_yellow;
+							else textures[m_cur_player] = &m_notebar_red;
+						}
+					} else { // blue + green + lightgreen + aqua
+						if (col.b > 0.5) { // blue + aqua
+							if (col.g > 0.9) textures[m_cur_player] = &m_notebar_aqua;
+							else textures[m_cur_player] = &m_notebar_blue;
+						} else { // green + lightgreen
+							if (col.b > 0.2) textures[m_cur_player] = &m_notebar_lightgreen;
+							else textures[m_cur_player] = &m_notebar_green;
 						}
 					}
-					++player_offset;
 				}
 				break;
 			}
 			case Note::GOLDEN: t_note_hl = &m_notebargold_hl;
 			{
 				t_note_hl = &m_notebar_hl; 
-				int player_offset = 0;
-				for (auto player_it = database.cur.begin(); player_it != database.cur.end(); ++player_it) 
-				{    
-					if (player_offset < 3) {
-						Color col = player_it->m_color;
+				if (m_cur_player < 3) {
+					Color col = player_it->m_color;
 
-						// guess the color
-						if (col.r > 0.5) { // red + yellow + fuchsia + purple
-							if (col.b > 0.5) { // fuchsia + purple
-								if (col.g > 0.3) textures[player_offset] = &m_notebar_fuchsia_gold;
-								else textures[player_offset] = &m_notebar_purple_gold;
-							} else { // red + yellow
-								if (col.g > 0.9) textures[player_offset] = &m_notebar_yellow_gold;
-								else textures[player_offset] = &m_notebar_red_gold;
-							}
-						} else { // blue + green + lightgreen + aqua
-							if (col.b > 0.5) { // blue + aqua
-								if (col.g > 0.9) textures[player_offset] = &m_notebar_aqua_gold;
-								else textures[player_offset] = &m_notebar_blue_gold;
-							} else { // green + lightgreen
-								if (col.b > 0.2) textures[player_offset] = &m_notebar_lightgreen_gold;
-								else textures[player_offset] = &m_notebar_green_gold;
-							}
+					// guess the color
+					if (col.r > 0.5) { // red + yellow + fuchsia + purple
+						if (col.b > 0.5) { // fuchsia + purple
+							if (col.g > 0.3) textures[m_cur_player] = &m_notebar_fuchsia_gold;
+							else textures[m_cur_player] = &m_notebar_purple_gold;
+						} else { // red + yellow
+							if (col.g > 0.9) textures[m_cur_player] = &m_notebar_yellow_gold;
+							else textures[m_cur_player] = &m_notebar_red_gold;
+						}
+					} else { // blue + green + lightgreen + aqua
+						if (col.b > 0.5) { // blue + aqua
+							if (col.g > 0.9) textures[m_cur_player] = &m_notebar_aqua_gold;
+							else textures[m_cur_player] = &m_notebar_blue_gold;
+						} else { // green + lightgreen
+							if (col.b > 0.2) textures[m_cur_player] = &m_notebar_lightgreen_gold;
+							else textures[m_cur_player] = &m_notebar_green_gold;
 						}
 					}
-					++player_offset;
 				}
 				break;
 			}
@@ -262,25 +257,19 @@ void NoteGraph::drawNotes(Database const& database) {
 		double yend = m_baseY + (it->note + 1) * m_noteUnit; // top y coordinate (on the one higher note line)
 		double w = (it->end - it->begin) * pixUnit - m_noteUnit * 2.0; // width: including borders on both sides
 		double h = -m_noteUnit * 2.0; // height: 0.5 border + 1.0 bar + 0.5 border = 2.0
-    
-		drawNotebar(*textures[0], x, ybeg - 0.08, yend - 0.08, w, h);
-		drawNotebar(*textures[1], x, ybeg, yend, w, h);
-		drawNotebar(*textures[2], x, ybeg + 0.08, yend + 0.08, w, h);
 
-		// TODO fix that all player notes are highligthed, if the main scores
-		int player_offset = 0;
+		if (m_cur_player < 3) {
+			drawNotebar(*textures[m_cur_player], x, ybeg - 0.08 + m_cur_player * 0.08, yend - 0.08 + m_cur_player * 0.08, w, h);
+		}
+
 		double alpha = it->power;
 		double alpha2 = 0.0;
-		for (auto player_it = database.cur.begin(); player_it != database.cur.end(); ++player_it) 
-		{    
-			if (player_offset < 3) {
-				alpha2 = player_it->m_power;
-				if (alpha2 > 0.0 && alpha > 0.0) {
-					ColorTrans c(Color::alpha(alpha2));
-					drawNotebar(*t_note_hl, x, ybeg - 0.08 + player_offset * 0.08, yend - 0.08 + player_offset * 0.08, w, h);
-				}
+		if (m_cur_player < 3) {
+			alpha2 = player_it->m_power;
+			if (alpha2 > 0.0 && alpha > 0.0) {
+				ColorTrans c(Color::alpha(alpha2));
+				drawNotebar(*t_note_hl, x, ybeg - 0.08 + m_cur_player * 0.08, yend - 0.08 + m_cur_player * 0.08, w, h);
 			}
-			++player_offset;
 		}
 	}
 }
