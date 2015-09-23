@@ -22,7 +22,6 @@ NoteGraph::NoteGraph(VocalTrack const& vocal):
 	m_notebar_aqua(findFile("notebar_aqua.svg")), m_notebar_aqua_gold(findFile("notebar_aqua_gold.svg")),
 	m_notebar_hl(findFile("notebar_hi.svg")),
 	m_notebarfs(findFile("notebarfs.svg")), m_notebarfs_hl(findFile("notebarfs-hl.png")),
-	m_notebargold_hl(findFile("notebargold_hi.svg")),
 	m_notealpha(0.0f), m_nlTop(0.0, 4.0), m_nlBottom(0.0, 4.0), m_time()
 {
 	dimensions.stretch(1.0, 0.5); // Initial dimensions, probably overridden from somewhere
@@ -131,15 +130,10 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 	ColorTrans c(Color::alpha(m_notealpha));
 
 	for (auto player_it = database.cur.begin(); player_it != database.cur.end(); ++player_it) {
-		drawNotes(database, player_it);
-		++m_cur_player;
-	}
+		// Draw notes
+		drawNotes(player_it);
 
-	if (config["game/pitch"].b()) drawWaves(database);
-
-	// Draw a star for well sung notes
-	int player_offset = 0;
-	for (auto player_it = database.cur.begin(); player_it != database.cur.end(); ++player_it) {
+		// Draw a star for well sung notes
 		for (auto it = m_songit; it != m_vocal.notes.end() && it->begin < m_time - (baseLine - 0.5) / pixUnit; ++it) {
 			for (std::vector<Color>::const_iterator it_col = it->stars.begin(); it_col != it->stars.end(); ++it_col) {
 				Color col = player_it->m_color;
@@ -148,7 +142,7 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 					double w = (it->end - it->begin) * pixUnit - m_noteUnit * 2.0; // width: including borders on both sides
 					float hh = -m_noteUnit;
 					float centery = m_baseY + (it->note + 0.4) * m_noteUnit; // Star is 0.4 notes higher than current note
-					centery = centery - 0.08 + 0.08 * player_offset;
+					centery = centery - 0.08 + 0.08 * m_cur_player;
 					float centerx = x + w - 1.2 * hh; // Star is 1.2 units from end
 					float rot = fmod(time * 5.0, 2.0 * M_PI); // They rotate!
 					bool smallerNoteGraph = ((position == NoteGraph::TOP) || (position == NoteGraph::BOTTOM));
@@ -163,30 +157,33 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 				}
 			}
 		}
-		++player_offset;
+
+		++m_cur_player;
 	}
+
+	// TODO refactor
+	if (config["game/pitch"].b()) drawWaves(database);
 }
 
-void NoteGraph::drawNotes(Database const& database, std::_List_const_iterator<Player> player_it) {
+void NoteGraph::drawNotes(std::_List_const_iterator<Player> player_it) {
 	// Draw note lines
-	m_notelines.draw(Dimensions().stretch(dimensions.w(), (m_max - m_min - 13) * m_noteUnit).middle(dimensions.xc()).center(dimensions.yc()), TexCoords(0.0, (-m_min - 7.0) / 12.0f, 1.0, (-m_max + 6.0) / 12.0f));
+	m_notelines.draw(Dimensions().stretch(dimensions.w(), (m_max - m_min - 13) * m_noteUnit).middle(
+			dimensions.xc()).center(dimensions.yc()), TexCoords(0.0, (-m_min - 7.0) / 12.0f, 1.0, (-m_max + 6.0) / 12.0f));
 
 	// Draw notes
-	for (auto it = m_songit; it != m_vocal.notes.end() && it->begin < m_time - (baseLine - 0.5) / pixUnit; ++it) {
-		if (it->type == Note::SLEEP) continue;
+	if (m_cur_player < 3) {
+		for (auto it = m_songit; it != m_vocal.notes.end() && it->begin < m_time - (baseLine - 0.5) / pixUnit; ++it) {
+			if (it->type == Note::SLEEP) continue;
 
-		// TODO use c++11 array OR boost::ptr_array
-		Texture* textures[3];
-		for (int i = 0; i < 3; ++i) {
-			textures[i] = &m_notebar_std;
-		}
+			// TODO use c++11 array OR boost::ptr_array
+			Texture* textures[3];
+			for (int i = 0; i < 3; ++i) {
+				textures[i] = &m_notebar_std;
+			}
+			Texture* t_note_hl =  &m_notebar_hl;
 
-		Texture* t_note_hl;
-		switch (it->type) {
-			case Note::NORMAL: case Note::SLIDE: 
-			{
-				t_note_hl = &m_notebar_hl; 
-				if (m_cur_player < 3) {
+			switch (it->type) {
+				case Note::NORMAL: case Note::SLIDE: {
 					Color col = player_it->m_color;
 
 					// guess the color
@@ -207,13 +204,9 @@ void NoteGraph::drawNotes(Database const& database, std::_List_const_iterator<Pl
 							else textures[m_cur_player] = &m_notebar_green;
 						}
 					}
+					break;
 				}
-				break;
-			}
-			case Note::GOLDEN: t_note_hl = &m_notebargold_hl;
-			{
-				t_note_hl = &m_notebar_hl; 
-				if (m_cur_player < 3) {
+				case Note::GOLDEN: {
 					Color col = player_it->m_color;
 
 					// guess the color
@@ -234,41 +227,39 @@ void NoteGraph::drawNotes(Database const& database, std::_List_const_iterator<Pl
 							else textures[m_cur_player] = &m_notebar_green_gold;
 						}
 					}
+					break;
 				}
-				break;
-			}
-			case Note::FREESTYLE:  // Freestyle notes use custom handling
-			{
-				double alpha = it->power;
-				Dimensions dim;
-				dim.middle(m_baseX + 0.5 * (it->begin + it->end) * pixUnit).center(m_baseY + it->note * m_noteUnit).stretch((it->end - it->begin) * pixUnit, -m_noteUnit * 12.0);
-				float xoffset = 0.1 * m_time / m_notebarfs.dimensions.ar();
-				m_notebarfs.draw(dim, TexCoords(xoffset, 0.0, xoffset + dim.ar() / m_notebarfs.dimensions.ar(), 1.0));
-				if (alpha > 0.0) {
-					float xoffset = rand() / double(RAND_MAX);
-					m_notebarfs_hl.draw(dim, TexCoords(xoffset, 0.0, xoffset + dim.ar() / m_notebarfs_hl.dimensions.ar(), 1.0));
+				case Note::FREESTYLE: // Freestyle notes use custom handling
+				{
+					double alpha = it->power;
+					Dimensions dim;
+					dim.middle(m_baseX + 0.5 * (it->begin + it->end) * pixUnit).center(m_baseY + it->note * m_noteUnit).stretch(
+							(it->end - it->begin) * pixUnit, -m_noteUnit * 12.0);
+					float xoffset = 0.1 * m_time / m_notebarfs.dimensions.ar();
+					m_notebarfs.draw(dim, TexCoords(xoffset, 0.0, xoffset + dim.ar() / m_notebarfs.dimensions.ar(), 1.0));
+					if (alpha > 0.0) {
+						float xoffset = rand() / double(RAND_MAX);
+						m_notebarfs_hl.draw(dim, TexCoords(xoffset, 0.0, xoffset + dim.ar() / m_notebarfs_hl.dimensions.ar(), 1.0));
+					}
 				}
+				continue;
+			  default: throw std::logic_error("Unknown note type: don't know how to render");
 			}
-			continue;
-		  default: throw std::logic_error("Unknown note type: don't know how to render");
-		}
-		double x = m_baseX + it->begin * pixUnit + m_noteUnit; // left x coordinate: begin minus border (side borders -noteUnit wide)
-		double ybeg = m_baseY + (it->notePrev + 1) * m_noteUnit; // top y coordinate (on the one higher note line)
-		double yend = m_baseY + (it->note + 1) * m_noteUnit; // top y coordinate (on the one higher note line)
-		double w = (it->end - it->begin) * pixUnit - m_noteUnit * 2.0; // width: including borders on both sides
-		double h = -m_noteUnit * 2.0; // height: 0.5 border + 1.0 bar + 0.5 border = 2.0
 
-		if (m_cur_player < 3) {
-			drawNotebar(*textures[m_cur_player], x, ybeg - 0.08 + m_cur_player * 0.08, yend - 0.08 + m_cur_player * 0.08, w, h);
-		}
+			double x = m_baseX + it->begin * pixUnit + m_noteUnit; // left x coordinate: begin minus border (side borders -noteUnit wide)
+			double ybeg = m_baseY - 0.08 + (it->notePrev + 1) * m_noteUnit + m_cur_player * 0.08; // top y coordinate (on the one higher note line)
+			double yend = m_baseY - 0.08 + (it->note + 1) * m_noteUnit + m_cur_player * 0.08; // top y coordinate (on the one higher note line)
+			double w = (it->end - it->begin) * pixUnit - m_noteUnit * 2.0; // width: including borders on both sides
+			double h = -m_noteUnit * 2.0; // height: 0.5 border + 1.0 bar + 0.5 border = 2.0
+			double alpha1 = it->power;
+			double alpha2 = player_it->m_power;
 
-		double alpha = it->power;
-		double alpha2 = 0.0;
-		if (m_cur_player < 3) {
-			alpha2 = player_it->m_power;
-			if (alpha2 > 0.0 && alpha > 0.0) {
+			// draw notes
+			drawNotebar(*textures[m_cur_player], x, ybeg, yend, w, h);
+			if (alpha2 > 0.0 && alpha1 > 0.0) {
 				ColorTrans c(Color::alpha(alpha2));
-				drawNotebar(*t_note_hl, x, ybeg - 0.08 + m_cur_player * 0.08, yend - 0.08 + m_cur_player * 0.08, w, h);
+				// draw highlights
+				drawNotebar(*t_note_hl, x, ybeg, yend, w, h);
 			}
 		}
 	}

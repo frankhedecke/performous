@@ -23,7 +23,7 @@ class NoteGraph {
 	void draw(double time, Database const& database, Position position = NoteGraph::FULLSCREEN);
   private:
 	/// draw notebars
-	void drawNotes(Database const& database, std::_List_const_iterator<Player> player_it);
+	void drawNotes(std::_List_const_iterator<Player> player_it);
 	/// draw waves (what players are singing)
 	void drawWaves(Database const& database);
 	VocalTrack const& m_vocal;
@@ -52,7 +52,6 @@ class NoteGraph {
 	Texture m_notebar_hl;
 	Texture m_notebarfs;
 	Texture m_notebarfs_hl;
-	Texture m_notebargold_hl;
 	float m_notealpha;
 	AnimValue m_nlTop, m_nlBottom;
 	Notes::const_iterator m_songit;
