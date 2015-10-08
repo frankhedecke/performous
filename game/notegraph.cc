@@ -159,10 +159,8 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 		}
 
 		++m_cur_player;
+		if (config["game/pitch"].b()) drawWaves(player_it);
 	}
-
-	// TODO refactor
-	if (config["game/pitch"].b()) drawWaves(database);
 }
 
 void NoteGraph::drawNotes(std::_List_const_iterator<Player> player_it) {
@@ -272,63 +270,60 @@ namespace {
 	}
 }
 
-void NoteGraph::drawWaves(Database const& database) {
+void NoteGraph::drawWaves(std::_List_const_iterator<Player> player_it) {
 	if (m_vocal.notes.empty()) return; // Cannot draw without notes
 	UseTexture tblock(m_wave);
-	int player_offset = 0;
-	for (auto const& player: database.cur) {
-		++player_offset;
-		if (player.m_vocal.name != m_vocal.name)
-			continue;
-		float const texOffset = 2.0 * m_time; // Offset for animating the wave texture
-		Player::pitch_t const& pitch = player.m_pitch;
-		size_t const beginIdx = std::max(0.0, m_time - 0.5 / pixUnit) / Engine::TIMESTEP; // At which pitch idx to start displaying the wave
-		size_t const endIdx = player.m_pos;
-		size_t idx = beginIdx;
-		// Go back until silence (NaN freq) to allow proper wave phase to be calculated
-		if (beginIdx < endIdx) while (idx > 0 && pitch[idx].first == pitch[idx].first) --idx;
-		// Start processing
-		float tex = texOffset;
-		double t = idx * Engine::TIMESTEP;
-		double oldval = getNaN();
-		glutil::VertexArray va;
-		auto noteIt = m_vocal.notes.begin();
-		glmath::vec4 c(player.m_color.r, player.m_color.g, player.m_color.b, 1.0);
-		for (; idx < endIdx; ++idx, t += Engine::TIMESTEP) {
-			double const freq = pitch[idx].first;
-			// If freq is NaN, we have nothing to process
-			if (freq != freq) { oldval = getNaN(); tex = texOffset; continue; }
-			tex += freq * 0.001; // Wave phase (texture coordinate)
-			if (idx < beginIdx) continue; // Skip graphics rendering if out of screen
-			double x = -0.2 + (t - m_time) * pixUnit;
-			// Find the currently active note(s)
-			while (noteIt != m_vocal.notes.end() && (noteIt->type == Note::SLEEP || t > noteIt->end)) ++noteIt;
-			auto notePrev = noteIt;
-			while (notePrev != m_vocal.notes.begin() && (notePrev->type == Note::SLEEP || t < notePrev->begin)) --notePrev;
-			bool hasNote = (noteIt != m_vocal.notes.end());
-			bool hasPrev = notePrev->type != Note::SLEEP && t >= notePrev->begin;
-			double val;
-			if (hasNote && hasPrev) val = 0.5 * (noteIt->note + notePrev->note);
-			else if (hasNote) val = noteIt->note;
-			else val = notePrev->note;
-			// Now val contains the active note value. The following calculates note value for current freq:
-			val += Note::diff(val, MusicalScale(m_vocal.scale).setFreq(freq).getNote());
-			// Graphics positioning & animation:
-			double y = m_baseY - 0.16 + 0.08 * player_offset + val * m_noteUnit;
-			double thickness = clamp(1.0 + pitch[idx].second / 60.0) + 0.5;
-			thickness *= 1.0 + 0.2 * std::sin(tex - 2.0 * texOffset); // Further animation :)
-			thickness *= -m_noteUnit;
-			// If there has been a break or if the pitch change is too fast, terminate and begin a new one
-			if (oldval != oldval || std::abs(oldval - val) > 1) strip(va);
-			// Add a point or a pair of points
-			if (!va.size()) va.texCoord(tex, 0.5f).color(c).vertex(x, y);
-			else {
-				va.texCoord(tex, 0.0f).color(c).vertex(x, y - thickness);
-				va.texCoord(tex, 1.0f).color(c).vertex(x, y + thickness);
-			}
-			oldval = val;
+	// TODO explain
+	if (player_it->m_vocal.name != m_vocal.name)
+		return;
+	float const texOffset = 2.0 * m_time; // Offset for animating the wave texture
+	Player::pitch_t const& pitch = player_it->m_pitch;
+	size_t const beginIdx = std::max(0.0, m_time - 0.5 / pixUnit) / Engine::TIMESTEP; // At which pitch idx to start displaying the wave
+	size_t const endIdx = player_it->m_pos;
+	size_t idx = beginIdx;
+	// Go back until silence (NaN freq) to allow proper wave phase to be calculated
+	if (beginIdx < endIdx) while (idx > 0 && pitch[idx].first == pitch[idx].first) --idx;
+	// Start processing
+	float tex = texOffset;
+	double t = idx * Engine::TIMESTEP;
+	double oldval = getNaN();
+	glutil::VertexArray va;
+	auto noteIt = m_vocal.notes.begin();
+	glmath::vec4 c(player_it->m_color.r, player_it->m_color.g, player_it->m_color.b, 1.0);
+	for (; idx < endIdx; ++idx, t += Engine::TIMESTEP) {
+		double const freq = pitch[idx].first;
+		// If freq is NaN, we have nothing to process
+		if (freq != freq) { oldval = getNaN(); tex = texOffset; continue; }
+		tex += freq * 0.001; // Wave phase (texture coordinate)
+		if (idx < beginIdx) continue; // Skip graphics rendering if out of screen
+		double x = -0.2 + (t - m_time) * pixUnit;
+		// Find the currently active note(s)
+		while (noteIt != m_vocal.notes.end() && (noteIt->type == Note::SLEEP || t > noteIt->end)) ++noteIt;
+		auto notePrev = noteIt;
+		while (notePrev != m_vocal.notes.begin() && (notePrev->type == Note::SLEEP || t < notePrev->begin)) --notePrev;
+		bool hasNote = (noteIt != m_vocal.notes.end());
+		bool hasPrev = notePrev->type != Note::SLEEP && t >= notePrev->begin;
+		double val;
+		if (hasNote && hasPrev) val = 0.5 * (noteIt->note + notePrev->note);
+		else if (hasNote) val = noteIt->note;
+		else val = notePrev->note;
+		// Now val contains the active note value. The following calculates note value for current freq:
+		val += Note::diff(val, MusicalScale(m_vocal.scale).setFreq(freq).getNote());
+		// Graphics positioning & animation:
+		double y = m_baseY - 0.16 + 0.08 * m_cur_player + val * m_noteUnit;
+		double thickness = clamp(1.0 + pitch[idx].second / 60.0) + 0.5;
+		thickness *= 1.0 + 0.2 * std::sin(tex - 2.0 * texOffset); // Further animation :)
+		thickness *= -m_noteUnit;
+		// If there has been a break or if the pitch change is too fast, terminate and begin a new one
+		if (oldval != oldval || std::abs(oldval - val) > 1) strip(va);
+		// Add a point or a pair of points
+		if (!va.size()) va.texCoord(tex, 0.5f).color(c).vertex(x, y);
+		else {
+			va.texCoord(tex, 0.0f).color(c).vertex(x, y - thickness);
+			va.texCoord(tex, 1.0f).color(c).vertex(x, y + thickness);
 		}
-		strip(va);
+		oldval = val;
 	}
+	strip(va);
 }
 

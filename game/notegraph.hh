@@ -25,7 +25,7 @@ class NoteGraph {
 	/// draw notebars
 	void drawNotes(std::_List_const_iterator<Player> player_it);
 	/// draw waves (what players are singing)
-	void drawWaves(Database const& database);
+	void drawWaves(std::_List_const_iterator<Player> player_it);
 	VocalTrack const& m_vocal;
 	Texture m_notelines;
 	Texture m_wave;
