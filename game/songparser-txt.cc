@@ -70,7 +70,9 @@ bool SongParser::txtParseField(std::string const& line) {
 
 	// Parse header data that is directly stored in m_song
 	if (key == "TITLE") m_song.title = value.substr(value.find_first_not_of(" :"));
+	else if (key == "Title") m_song.title = value.substr(value.find_first_not_of(" "));
 	else if (key == "ARTIST") m_song.artist = value.substr(value.find_first_not_of(" "));
+	else if (key == "Artist") m_song.artist = value.substr(value.find_first_not_of(" "));
 	else if (key == "EDITION") m_song.edition = value.substr(value.find_first_not_of(" "));
 	else if (key == "GENRE") m_song.genre = value.substr(value.find_first_not_of(" "));
 	else if (key == "CREATOR") m_song.creator = value.substr(value.find_first_not_of(" "));
