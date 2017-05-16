@@ -11,7 +11,7 @@ class Database;
 /// handles drawing of notes and waves
 class NoteGraph {
   public:
-	enum Position {FULLSCREEN, TOP, BOTTOM, LEFT, RIGHT};
+	enum Position {FULLSCREEN, TOP, BOTTOM, LEFT, RIGHT, BETA_TOP, BETA_BOTTOM};
 	/// constructor
 	NoteGraph(VocalTrack const& vocal);
 	/// resets NoteGraph and Notes
@@ -27,7 +27,6 @@ class NoteGraph {
 	/// draw waves (what players are singing)
 	void drawWaves(std::_List_const_iterator<Player> player_it);
 	VocalTrack const& m_vocal;
-	Texture m_notelines;
 	Texture m_wave;
 	Texture m_star;
 	Texture m_star_hl;
@@ -58,5 +57,7 @@ class NoteGraph {
 	double m_time;
 	double m_max, m_min, m_noteUnit, m_baseY, m_baseX;
 	int m_cur_player;
+	int m_cur_offset;
+	int m_max_players;
 };
 

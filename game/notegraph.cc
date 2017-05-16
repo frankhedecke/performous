@@ -9,7 +9,7 @@ Dimensions dimensions; // Make a public member variable
 
 NoteGraph::NoteGraph(VocalTrack const& vocal):
 	m_vocal(vocal),
-	m_notelines(findFile("notelines.svg")), m_wave(findFile("wave.png")),
+	m_wave(findFile("wave.png")),
 	m_star(findFile("star.svg")), m_star_hl(findFile("star_glow.svg")),
 	m_notebar_std(findFile("notebar_std.svg")), m_notebar_std_gold(findFile("notebar_std_gold.svg")),
 	m_notebar_blue(findFile("notebar_blue.svg")), m_notebar_blue_gold(findFile("notebar_blue_gold.svg")),
@@ -98,6 +98,7 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 			m_nlBottom.setRange(low, low2);
 		}
 	}
+	// TODO check if non BETA positions still work
 	switch(position) {
 		case NoteGraph::FULLSCREEN:
 			dimensions.stretch(1.0, 0.50).center();
@@ -105,6 +106,7 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 		case NoteGraph::TOP:
 			dimensions.stretch(1.0, 0.32).bottom(0.0);
 			break;
+		// why BOTTOM and top()?
 		case NoteGraph::BOTTOM:
 			dimensions.stretch(1.0, 0.32).top(0.0);
 			break;
@@ -114,13 +116,23 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 		case NoteGraph::RIGHT:
 			dimensions.stretch(0.50, 0.50).center().right();
 			break;
+		case NoteGraph::BETA_TOP:
+			dimensions.stretch(1.0, 0.32).bottom(0.0);
+			break;
+		case NoteGraph::BETA_BOTTOM:
+			dimensions.stretch(1.0, 0.32).top(0.0);
+			break;
 	}
 	m_max = m_nlTop.get() + 7.0;
 	m_min = m_nlBottom.get() - 7.0;
 	m_noteUnit = -dimensions.h() / std::max(48.0 * dimensions.h(), m_max - m_min);
 	m_baseY = -0.5 * (m_min + m_max) * m_noteUnit + dimensions.yc();
 	m_baseX = baseLine - m_time * pixUnit + dimensions.xc();  // FIXME: Moving in X direction requires additional love (is b0rked now, keep it centered at zero)
+	m_max_players = database.cur.size();
 	m_cur_player = 0;
+	m_cur_offset = 0;
+	if (position == NoteGraph::BETA_BOTTOM)
+		m_cur_offset = (m_max_players + 1) / 2;
 
 	// Fading notelines handing
 	if (m_songit == m_vocal.notes.end() || m_songit->begin > m_time + 3.0) m_notealpha -= 0.02f;
@@ -130,52 +142,85 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 	ColorTrans c(Color::alpha(m_notealpha));
 
 	for (auto player_it = database.cur.begin(); player_it != database.cur.end(); ++player_it) {
-		// Draw notes
-		drawNotes(player_it);
 
-		// Draw a star for well sung notes
-		for (auto it = m_songit; it != m_vocal.notes.end() && it->begin < m_time - (baseLine - 0.5) / pixUnit; ++it) {
-			for (std::vector<Color>::const_iterator it_col = it->stars.begin(); it_col != it->stars.end(); ++it_col) {
-				Color col = player_it->m_color;
-				if(col.r == it_col->r && col.g == it_col->g && col.b == it_col->b) {
-					double x = m_baseX + it->begin * pixUnit + m_noteUnit; // left x coordinate: begin minus border (side borders -noteUnit wide)
-					double w = (it->end - it->begin) * pixUnit - m_noteUnit * 2.0; // width: including borders on both sides
-					float hh = -m_noteUnit;
-					float centery = m_baseY + (it->note + 0.4) * m_noteUnit; // Star is 0.4 notes higher than current note
-					centery = centery - 0.08 + 0.08 * m_cur_player;
-					float centerx = x + w - 1.2 * hh; // Star is 1.2 units from end
-					float rot = fmod(time * 5.0, 2.0 * M_PI); // They rotate!
-					bool smallerNoteGraph = ((position == NoteGraph::TOP) || (position == NoteGraph::BOTTOM));
-					float zoom = (std::abs((rot-180) / 360.0f) * 0.8f + 0.6f) * (smallerNoteGraph ? 2.3 : 2.0) * hh;
-					using namespace glmath;
-					Transform trans(translate(vec3(centerx, centery, 0.0f)) * rotate(rot, vec3(0.0f, 0.0f, 1.0f)));
-					{
-						ColorTrans c(Color(col.r, col.g, col.b, col.a));
-						m_star_hl.draw(Dimensions().stretch(zoom*1.2, zoom*1.2).center().middle(), TexCoords());
-					}
-					m_star.draw(Dimensions().stretch(zoom, zoom).center().middle(), TexCoords());
+		// filter players for some views
+		// TODO players should be filtered elsewhere
+
+		bool player_select = false;
+		switch(position) {
+			case NoteGraph::BETA_TOP:
+				if (m_cur_player <= ((m_max_players - 1) / 2)) {
+					player_select = true;
 				}
-			}
+				break;
+			case NoteGraph::BETA_BOTTOM:
+				if (m_cur_player > ((m_max_players - 1) / 2)) {
+					player_select = true;
+				}
+				break;
+			default:
+				player_select = true;
+				break;
 		}
 
-		++m_cur_player;
+		if (player_select) {
+			// Draw notes
+			drawNotes(player_it);
+
+			// TODO refactor to extra method
+			// TODO use cur_player and offset
+			// Draw a star for well sung notes
+			for (auto it = m_songit; it != m_vocal.notes.end() && it->begin < m_time - (baseLine - 0.5) / pixUnit; ++it) {
+				for (std::vector<Color>::const_iterator it_col = it->stars.begin(); it_col != it->stars.end(); ++it_col) {
+					Color col = player_it->m_color;
+					if(col.r == it_col->r && col.g == it_col->g && col.b == it_col->b) {
+						double x = m_baseX + it->begin * pixUnit + m_noteUnit; // left x coordinate: begin minus border (side borders -noteUnit wide)
+						double w = (it->end - it->begin) * pixUnit - m_noteUnit * 2.0; // width: including borders on both sides
+						float hh = -m_noteUnit;
+						float centery = m_baseY + (it->note + 0.4) * m_noteUnit; // Star is 0.4 notes higher than current note
+						//centery = centery - 0.08 + 0.08 * m_cur_player;
+						centery = centery + 0.08 * m_cur_player;
+						float centerx = x + w - 1.2 * hh; // Star is 1.2 units from end
+						float rot = fmod(time * 5.0, 2.0 * M_PI); // They rotate!
+						bool smallerNoteGraph = ((position == NoteGraph::TOP) || (position == NoteGraph::BOTTOM));
+						float zoom = (std::abs((rot-180) / 360.0f) * 0.8f + 0.6f) * (smallerNoteGraph ? 2.3 : 2.0) * hh;
+						using namespace glmath;
+						Transform trans(translate(vec3(centerx, centery, 0.0f)) * rotate(rot, vec3(0.0f, 0.0f, 1.0f)));
+						{
+							ColorTrans c(Color(col.r, col.g, col.b, col.a));
+							m_star_hl.draw(Dimensions().stretch(zoom*1.2, zoom*1.2).center().middle(), TexCoords());
+						}
+						m_star.draw(Dimensions().stretch(zoom, zoom).center().middle(), TexCoords());
+					}
+				}
+			}
 		if (config["game/pitch"].b()) drawWaves(player_it);
+		}
+		++m_cur_player;
 	}
 }
 
 void NoteGraph::drawNotes(std::_List_const_iterator<Player> player_it) {
-	// Draw note lines
-	m_notelines.draw(Dimensions().stretch(dimensions.w(), (m_max - m_min - 13) * m_noteUnit).middle(
-			dimensions.xc()).center(dimensions.yc()), TexCoords(0.0, (-m_min - 7.0) / 12.0f, 1.0, (-m_max + 6.0) / 12.0f));
 
+	// calc displayed players
+	// offset = 0 or max_players / 2
+	int player = m_cur_player - m_cur_offset;
+	int max_players = 0;
+	if (m_cur_offset == 0) { // BETA_TOP
+		max_players = m_max_players - m_max_players / 2;
+	} else if ((m_max_players % 2) == 0) { // BETA_BOP
+		max_players = m_max_players - m_max_players / 2;
+	} else if ((m_max_players % 2) == 1) { // BETA_BOP
+		max_players = m_max_players / 2;
+	}
 	// Draw notes
-	if (m_cur_player < 3) {
+	if ((0 <= player) && (player < 4)) {
 		for (auto it = m_songit; it != m_vocal.notes.end() && it->begin < m_time - (baseLine - 0.5) / pixUnit; ++it) {
 			if (it->type == Note::SLEEP) continue;
 
 			// TODO use c++11 array OR boost::ptr_array
-			Texture* textures[3];
-			for (int i = 0; i < 3; ++i) {
+			Texture* textures[max_players]; // TODO use max_players
+			for (int i = 0; i < max_players; ++i) { // TODO use max_players
 				textures[i] = &m_notebar_std;
 			}
 			Texture* t_note_hl =  &m_notebar_hl;
@@ -187,19 +232,19 @@ void NoteGraph::drawNotes(std::_List_const_iterator<Player> player_it) {
 					// guess the color
 					if (col.r > 0.5) { // red + yellow + fuchsia + purple
 						if (col.b > 0.5) { // fuchsia + purple
-							if (col.g > 0.3) textures[m_cur_player] = &m_notebar_fuchsia;
-							else textures[m_cur_player] = &m_notebar_purple;
+							if (col.g > 0.3) textures[player] = &m_notebar_fuchsia;
+							else textures[player] = &m_notebar_purple;
 						} else { // red + yellow
-							if (col.g > 0.9) textures[m_cur_player] = &m_notebar_yellow;
-							else textures[m_cur_player] = &m_notebar_red;
+							if (col.g > 0.9) textures[player] = &m_notebar_yellow;
+							else textures[player] = &m_notebar_red;
 						}
 					} else { // blue + green + lightgreen + aqua
 						if (col.b > 0.5) { // blue + aqua
-							if (col.g > 0.9) textures[m_cur_player] = &m_notebar_aqua;
-							else textures[m_cur_player] = &m_notebar_blue;
+							if (col.g > 0.9) textures[player] = &m_notebar_aqua;
+							else textures[player] = &m_notebar_blue;
 						} else { // green + lightgreen
-							if (col.b > 0.2) textures[m_cur_player] = &m_notebar_lightgreen;
-							else textures[m_cur_player] = &m_notebar_green;
+							if (col.b > 0.2) textures[player] = &m_notebar_lightgreen;
+							else textures[player] = &m_notebar_green;
 						}
 					}
 					break;
@@ -210,19 +255,19 @@ void NoteGraph::drawNotes(std::_List_const_iterator<Player> player_it) {
 					// guess the color
 					if (col.r > 0.5) { // red + yellow + fuchsia + purple
 						if (col.b > 0.5) { // fuchsia + purple
-							if (col.g > 0.3) textures[m_cur_player] = &m_notebar_fuchsia_gold;
-							else textures[m_cur_player] = &m_notebar_purple_gold;
+							if (col.g > 0.3) textures[player] = &m_notebar_fuchsia_gold;
+							else textures[player] = &m_notebar_purple_gold;
 						} else { // red + yellow
-							if (col.g > 0.9) textures[m_cur_player] = &m_notebar_yellow_gold;
-							else textures[m_cur_player] = &m_notebar_red_gold;
+							if (col.g > 0.9) textures[player] = &m_notebar_yellow_gold;
+							else textures[player] = &m_notebar_red_gold;
 						}
 					} else { // blue + green + lightgreen + aqua
 						if (col.b > 0.5) { // blue + aqua
-							if (col.g > 0.9) textures[m_cur_player] = &m_notebar_aqua_gold;
-							else textures[m_cur_player] = &m_notebar_blue_gold;
+							if (col.g > 0.9) textures[player] = &m_notebar_aqua_gold;
+							else textures[player] = &m_notebar_blue_gold;
 						} else { // green + lightgreen
-							if (col.b > 0.2) textures[m_cur_player] = &m_notebar_lightgreen_gold;
-							else textures[m_cur_player] = &m_notebar_green_gold;
+							if (col.b > 0.2) textures[player] = &m_notebar_lightgreen_gold;
+							else textures[player] = &m_notebar_green_gold;
 						}
 					}
 					break;
@@ -244,16 +289,18 @@ void NoteGraph::drawNotes(std::_List_const_iterator<Player> player_it) {
 			  default: throw std::logic_error("Unknown note type: don't know how to render");
 			}
 
+			// TODO change according to max_players
 			double x = m_baseX + it->begin * pixUnit + m_noteUnit; // left x coordinate: begin minus border (side borders -noteUnit wide)
-			double ybeg = m_baseY - 0.08 + (it->notePrev + 1) * m_noteUnit + m_cur_player * 0.08; // top y coordinate (on the one higher note line)
-			double yend = m_baseY - 0.08 + (it->note + 1) * m_noteUnit + m_cur_player * 0.08; // top y coordinate (on the one higher note line)
+			// double ybeg = m_baseY - 0.08 + (it->notePrev + 1) * m_noteUnit + player * 0.08; // top y coordinate (on the one higher note line)
+			double ybeg = m_baseY + (it->notePrev + 1) * m_noteUnit + player * 0.08; // top y coordinate (on the one higher note line)
+			double yend = m_baseY + (it->note + 1) * m_noteUnit + player * 0.08; // top y coordinate (on the one higher note line)
 			double w = (it->end - it->begin) * pixUnit - m_noteUnit * 2.0; // width: including borders on both sides
 			double h = -m_noteUnit * 2.0; // height: 0.5 border + 1.0 bar + 0.5 border = 2.0
 			double alpha1 = it->power;
 			double alpha2 = player_it->m_power;
 
 			// draw notes
-			drawNotebar(*textures[m_cur_player], x, ybeg, yend, w, h);
+			drawNotebar(*textures[player], x, ybeg, yend, w, h);
 			if (alpha2 > 0.0 && alpha1 > 0.0) {
 				ColorTrans c(Color::alpha(alpha2));
 				// draw highlights
@@ -270,6 +317,7 @@ namespace {
 	}
 }
 
+// TODO redo with cur_player and offset
 void NoteGraph::drawWaves(std::_List_const_iterator<Player> player_it) {
 	if (m_vocal.notes.empty()) return; // Cannot draw without notes
 	UseTexture tblock(m_wave);
@@ -310,7 +358,8 @@ void NoteGraph::drawWaves(std::_List_const_iterator<Player> player_it) {
 		// Now val contains the active note value. The following calculates note value for current freq:
 		val += Note::diff(val, MusicalScale(m_vocal.scale).setFreq(freq).getNote());
 		// Graphics positioning & animation:
-		double y = m_baseY - 0.16 + 0.08 * m_cur_player + val * m_noteUnit;
+		// double y = m_baseY - 0.16 + 0.08 * m_cur_player + val * m_noteUnit;
+		double y = m_baseY + 0.08 * m_cur_player + val * m_noteUnit;
 		double thickness = clamp(1.0 + pitch[idx].second / 60.0) + 0.5;
 		thickness *= 1.0 + 0.2 * std::sin(tex - 2.0 * texOffset); // Further animation :)
 		thickness *= -m_noteUnit;

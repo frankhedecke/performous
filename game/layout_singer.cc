@@ -100,7 +100,9 @@ void LayoutSinger::draw(double time, PositionMode position) {
 	if (!config["game/karaoke_mode"].i()) {
 		switch(position) {
 			case LayoutSinger::FULL:
-				m_noteGraph.draw(time, m_database, NoteGraph::FULLSCREEN);
+				//m_noteGraph.draw(time, m_database, NoteGraph::FULLSCREEN);
+				m_noteGraph.draw(time, m_database, NoteGraph::BETA_TOP);
+				m_noteGraph.draw(time, m_database, NoteGraph::BETA_BOTTOM);
 				break;
 			case LayoutSinger::TOP:
 				m_noteGraph.draw(time, m_database, NoteGraph::TOP);
@@ -124,7 +126,8 @@ void LayoutSinger::draw(double time, PositionMode position) {
 				if(config["game/karaoke_mode"].i() >= 2) {
 					pos.center(0);
 				} else {
-					pos.screenBottom(-0.1);
+					//pos.screenBottom(-0.1);
+					pos.center(0.0);
 				}
 				linespacing = 0.06;
 				break;
