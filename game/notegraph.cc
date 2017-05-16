@@ -168,7 +168,6 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 			drawNotes(player_it);
 
 			// TODO refactor to extra method
-			// TODO use cur_player and offset
 			// Draw a star for well sung notes
 			for (auto it = m_songit; it != m_vocal.notes.end() && it->begin < m_time - (baseLine - 0.5) / pixUnit; ++it) {
 				for (std::vector<Color>::const_iterator it_col = it->stars.begin(); it_col != it->stars.end(); ++it_col) {
@@ -179,7 +178,9 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 						float hh = -m_noteUnit;
 						float centery = m_baseY + (it->note + 0.4) * m_noteUnit; // Star is 0.4 notes higher than current note
 						//centery = centery - 0.08 + 0.08 * m_cur_player;
-						centery = centery + 0.08 * m_cur_player;
+						// TODO consider max players and center y_offset
+						int player = m_cur_player - m_cur_offset;
+						centery += 0.08 * player;
 						float centerx = x + w - 1.2 * hh; // Star is 1.2 units from end
 						float rot = fmod(time * 5.0, 2.0 * M_PI); // They rotate!
 						bool smallerNoteGraph = ((position == NoteGraph::TOP) || (position == NoteGraph::BOTTOM));
@@ -203,24 +204,24 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 void NoteGraph::drawNotes(std::_List_const_iterator<Player> player_it) {
 
 	// calc displayed players
-	// offset = 0 or max_players / 2
 	int player = m_cur_player - m_cur_offset;
 	int max_players = 0;
-	if (m_cur_offset == 0) { // BETA_TOP
+	if (m_cur_offset == 0) { // TOP
 		max_players = m_max_players - m_max_players / 2;
-	} else if ((m_max_players % 2) == 0) { // BETA_BOP
+	} else if ((m_max_players % 2) == 0) { // BOTTOM
 		max_players = m_max_players - m_max_players / 2;
-	} else if ((m_max_players % 2) == 1) { // BETA_BOP
+	} else if ((m_max_players % 2) == 1) { // BOTTOM
 		max_players = m_max_players / 2;
 	}
+
 	// Draw notes
 	if ((0 <= player) && (player < 4)) {
 		for (auto it = m_songit; it != m_vocal.notes.end() && it->begin < m_time - (baseLine - 0.5) / pixUnit; ++it) {
 			if (it->type == Note::SLEEP) continue;
 
 			// TODO use c++11 array OR boost::ptr_array
-			Texture* textures[max_players]; // TODO use max_players
-			for (int i = 0; i < max_players; ++i) { // TODO use max_players
+			Texture* textures[max_players];
+			for (int i = 0; i < max_players; ++i) {
 				textures[i] = &m_notebar_std;
 			}
 			Texture* t_note_hl =  &m_notebar_hl;
@@ -292,6 +293,7 @@ void NoteGraph::drawNotes(std::_List_const_iterator<Player> player_it) {
 			// TODO change according to max_players
 			double x = m_baseX + it->begin * pixUnit + m_noteUnit; // left x coordinate: begin minus border (side borders -noteUnit wide)
 			// double ybeg = m_baseY - 0.08 + (it->notePrev + 1) * m_noteUnit + player * 0.08; // top y coordinate (on the one higher note line)
+			// TODO consider max players and center y_offset
 			double ybeg = m_baseY + (it->notePrev + 1) * m_noteUnit + player * 0.08; // top y coordinate (on the one higher note line)
 			double yend = m_baseY + (it->note + 1) * m_noteUnit + player * 0.08; // top y coordinate (on the one higher note line)
 			double w = (it->end - it->begin) * pixUnit - m_noteUnit * 2.0; // width: including borders on both sides
@@ -317,8 +319,9 @@ namespace {
 	}
 }
 
-// TODO redo with cur_player and offset
+// TODO consider max players and center y_offset
 void NoteGraph::drawWaves(std::_List_const_iterator<Player> player_it) {
+	int player = m_cur_player - m_cur_offset;
 	if (m_vocal.notes.empty()) return; // Cannot draw without notes
 	UseTexture tblock(m_wave);
 	// TODO explain
@@ -358,8 +361,7 @@ void NoteGraph::drawWaves(std::_List_const_iterator<Player> player_it) {
 		// Now val contains the active note value. The following calculates note value for current freq:
 		val += Note::diff(val, MusicalScale(m_vocal.scale).setFreq(freq).getNote());
 		// Graphics positioning & animation:
-		// double y = m_baseY - 0.16 + 0.08 * m_cur_player + val * m_noteUnit;
-		double y = m_baseY + 0.08 * m_cur_player + val * m_noteUnit;
+		double y = m_baseY + 0.08 * player + val * m_noteUnit;
 		double thickness = clamp(1.0 + pitch[idx].second / 60.0) + 0.5;
 		thickness *= 1.0 + 0.2 * std::sin(tex - 2.0 * texOffset); // Further animation :)
 		thickness *= -m_noteUnit;
