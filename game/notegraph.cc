@@ -164,38 +164,10 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 		}
 
 		if (player_select) {
-			// Draw notes
 			drawNotes(player_it);
-
-			// TODO refactor to extra method
-			// Draw a star for well sung notes
-			for (auto it = m_songit; it != m_vocal.notes.end() && it->begin < m_time - (baseLine - 0.5) / pixUnit; ++it) {
-				for (std::vector<Color>::const_iterator it_col = it->stars.begin(); it_col != it->stars.end(); ++it_col) {
-					Color col = player_it->m_color;
-					if(col.r == it_col->r && col.g == it_col->g && col.b == it_col->b) {
-						double x = m_baseX + it->begin * pixUnit + m_noteUnit; // left x coordinate: begin minus border (side borders -noteUnit wide)
-						double w = (it->end - it->begin) * pixUnit - m_noteUnit * 2.0; // width: including borders on both sides
-						float hh = -m_noteUnit;
-						float centery = m_baseY + (it->note + 0.4) * m_noteUnit; // Star is 0.4 notes higher than current note
-						//centery = centery - 0.08 + 0.08 * m_cur_player;
-						// TODO consider max players and center y_offset
-						int player = m_cur_player - m_cur_offset;
-						centery += 0.08 * player;
-						float centerx = x + w - 1.2 * hh; // Star is 1.2 units from end
-						float rot = fmod(time * 5.0, 2.0 * M_PI); // They rotate!
-						bool smallerNoteGraph = ((position == NoteGraph::TOP) || (position == NoteGraph::BOTTOM));
-						float zoom = (std::abs((rot-180) / 360.0f) * 0.8f + 0.6f) * (smallerNoteGraph ? 2.3 : 2.0) * hh;
-						using namespace glmath;
-						Transform trans(translate(vec3(centerx, centery, 0.0f)) * rotate(rot, vec3(0.0f, 0.0f, 1.0f)));
-						{
-							ColorTrans c(Color(col.r, col.g, col.b, col.a));
-							m_star_hl.draw(Dimensions().stretch(zoom*1.2, zoom*1.2).center().middle(), TexCoords());
-						}
-						m_star.draw(Dimensions().stretch(zoom, zoom).center().middle(), TexCoords());
-					}
-				}
-			}
-		if (config["game/pitch"].b()) drawWaves(player_it);
+			drawStars(player_it, position);
+			if (config["game/pitch"].b())
+				drawWaves(player_it);
 		}
 		++m_cur_player;
 	}
@@ -319,6 +291,36 @@ namespace {
 	}
 }
 
+void NoteGraph::drawStars(std::_List_const_iterator<Player> player_it, Position position) {
+	for (auto it = m_songit; it != m_vocal.notes.end() && it->begin < m_time - (baseLine - 0.5) / pixUnit; ++it) {
+		for (std::vector<Color>::const_iterator it_col = it->stars.begin(); it_col != it->stars.end(); ++it_col) {
+			Color col = player_it->m_color;
+			if(col.r == it_col->r && col.g == it_col->g && col.b == it_col->b) {
+				double x = m_baseX + it->begin * pixUnit + m_noteUnit; // left x coordinate: begin minus border (side borders -noteUnit wide)
+				double w = (it->end - it->begin) * pixUnit - m_noteUnit * 2.0; // width: including borders on both sides
+				float hh = -m_noteUnit;
+				float centery = m_baseY + (it->note + 0.4) * m_noteUnit; // Star is 0.4 notes higher than current note
+				//centery = centery - 0.08 + 0.08 * m_cur_player;
+				// TODO consider max players and center y_offset
+				int player = m_cur_player - m_cur_offset;
+				centery += 0.08 * player;
+				float centerx = x + w - 1.2 * hh; // Star is 1.2 units from end
+				float rot = fmod(m_time * 5.0, 2.0 * M_PI); // They rotate!
+				// TODO maybe evaluate smallerNoteGraph elsewhere
+				bool smallerNoteGraph = ((position == NoteGraph::TOP) || (position == NoteGraph::BOTTOM) ||(position == NoteGraph::BETA_TOP) || (position == NoteGraph::BETA_BOTTOM));
+				float zoom = (std::abs((rot-180) / 360.0f) * 0.8f + 0.6f) * (smallerNoteGraph ? 2.3 : 2.0) * hh;
+				using namespace glmath;
+				Transform trans(translate(vec3(centerx, centery, 0.0f)) * rotate(rot, vec3(0.0f, 0.0f, 1.0f)));
+				{
+					ColorTrans c(Color(col.r, col.g, col.b, col.a));
+					m_star_hl.draw(Dimensions().stretch(zoom*1.2, zoom*1.2).center().middle(), TexCoords());
+				}
+				m_star.draw(Dimensions().stretch(zoom, zoom).center().middle(), TexCoords());
+			}
+		}
+	}
+}
+
 // TODO consider max players and center y_offset
 void NoteGraph::drawWaves(std::_List_const_iterator<Player> player_it) {
 	int player = m_cur_player - m_cur_offset;
@@ -377,4 +379,3 @@ void NoteGraph::drawWaves(std::_List_const_iterator<Player> player_it) {
 	}
 	strip(va);
 }
-

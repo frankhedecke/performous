@@ -24,6 +24,8 @@ class NoteGraph {
   private:
 	/// draw notebars
 	void drawNotes(std::_List_const_iterator<Player> player_it);
+	/// draw stars for well sung notes
+	void drawStars(std::_List_const_iterator<Player> player_it, Position position);
 	/// draw waves (what players are singing)
 	void drawWaves(std::_List_const_iterator<Player> player_it);
 	VocalTrack const& m_vocal;
