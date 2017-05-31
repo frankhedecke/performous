@@ -5,6 +5,9 @@
 #include "engine.hh"
 #include "player.hh"
 
+// TODO remove
+#include <iostream>
+
 Dimensions dimensions; // Make a public member variable
 
 NoteGraph::NoteGraph(VocalTrack const& vocal):
@@ -32,6 +35,19 @@ NoteGraph::NoteGraph(VocalTrack const& vocal):
 }
 
 void NoteGraph::reset() {
+	m_vocalit_beg = m_vocal.notes.begin();
+	m_vocalit_end = m_vocal.notes.begin();
+	Notes::const_iterator eof = m_vocal.notes.end();
+
+	// iterate first time to next sleep note
+	std::cout << ">>> NoteGraph: ";
+	for (Notes::const_iterator it = m_vocalit_beg; it != eof && it->type != Note::SLEEP; ++it) {
+		std::cout << it->syllable;
+		// TODO do this only with last it
+		m_vocalit_end = it;
+	}
+	std::cout << std::endl;
+
 	m_songit = m_vocal.notes.begin();
 }
 
@@ -117,10 +133,10 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 			dimensions.stretch(0.50, 0.50).center().right();
 			break;
 		case NoteGraph::BETA_TOP:
-			dimensions.stretch(1.0, 0.32).bottom(0.0);
+			dimensions.stretch(1.0, 0.25).bottom(0.0);
 			break;
 		case NoteGraph::BETA_BOTTOM:
-			dimensions.stretch(1.0, 0.32).top(0.0);
+			dimensions.stretch(1.0, 0.25).top(0.0);
 			break;
 	}
 	m_max = m_nlTop.get() + 7.0;
@@ -170,6 +186,65 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 				drawWaves(player_it);
 		}
 		++m_cur_player;
+	}
+}
+
+void NoteGraph::draw_new(double time, VocalTrack& vocal, Database const& database, Position position) {
+
+	// TODO initial dimension seems false
+	// first text line has false placed notebars sometomes
+	Notes::const_iterator eof = vocal.notes.end();
+
+	if(time > m_vocalit_end->end) {
+		// and check eof
+		m_vocalit_beg = m_vocalit_end;
+		m_vocalit_beg++;
+		if (m_vocalit_beg != eof)
+			m_vocalit_beg++;
+		// iterate to next sleep note
+		std::cout << ">>> NoteGraph: ";
+		m_cur_lowest = m_vocalit_beg->note;
+		m_cur_highest = m_vocalit_beg->note;
+		for (Notes::const_iterator it = m_vocalit_beg; it != eof && it->type != Note::SLEEP; ++it) {
+			std::cout << it->syllable;
+			m_vocalit_end = it;
+			if(it->note > m_cur_highest) m_cur_highest = it->note;
+			if(it->note < m_cur_lowest) m_cur_lowest = it->note;
+		}
+
+	std::cout << std::endl;
+	}
+
+	// draw stuff
+
+	Texture* texture = &m_notebar_red;
+	double time_span = m_vocalit_end->end - m_vocalit_beg->begin;
+	int noterange = m_cur_highest - m_cur_lowest + 1;
+	if (noterange == 0) {
+		noterange = 1;
+		std::cout << "NoteGraph : noterange is 0" << std::endl;
+	}
+
+	for (auto it = m_vocalit_beg; it != m_vocal.notes.end() && it <= m_vocalit_end; ++it) {
+		if (it->type == Note::SLEEP) continue;
+
+		float x = -0.45;
+		// yend = m_baseY + (it->note + 1) * m_noteUnit
+		float w = 0.2;
+		float h = 0.03;
+
+		// 0.9 because we do not use the first and last 5% (0.05) of screen space
+		x += (it->begin - m_vocalit_beg->begin) / time_span * 0.9;
+		w = (it->end - it->begin) / time_span * 0.9; // TODO add borders left + right
+
+		// dimension.h() should be 0.16
+		// * 0.9 to use only 90% of vertical space
+		float y = -1.0 * (it->note - m_cur_lowest) / noterange * dimensions.h() * 0.9;
+		// shift the middle to one half of 90%
+		// y -= 0.05 * dimensions.h();
+		if (noterange == 1)
+			y = -0.5 * dimensions.h();
+		drawNotebar(*texture, x , y, y, w, h);
 	}
 }
 
@@ -275,6 +350,8 @@ void NoteGraph::drawNotes(std::_List_const_iterator<Player> player_it) {
 
 			// draw notes
 			drawNotebar(*textures[player], x, ybeg, yend, w, h);
+			//std::cout << "BLUB " << x << " " << ybeg << " " << yend;
+			//std::cout << " - " << w << " " << h << std::endl;
 			if (alpha2 > 0.0 && alpha1 > 0.0) {
 				ColorTrans c(Color::alpha(alpha2));
 				// draw highlights

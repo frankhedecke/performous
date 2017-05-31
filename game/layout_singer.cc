@@ -101,8 +101,10 @@ void LayoutSinger::draw(double time, PositionMode position) {
 		switch(position) {
 			case LayoutSinger::FULL:
 				//m_noteGraph.draw(time, m_database, NoteGraph::FULLSCREEN);
-				m_noteGraph.draw(time, m_database, NoteGraph::BETA_TOP);
+				//m_noteGraph.draw(time, m_database, NoteGraph::BETA_TOP);
+				m_noteGraph.draw_new(time, m_vocal, m_database, NoteGraph::BETA_TOP);
 				m_noteGraph.draw(time, m_database, NoteGraph::BETA_BOTTOM);
+				//m_noteGraph.draw_new(time, m_vocal, m_database, NoteGraph::BETA_BOTTOM);
 				break;
 			case LayoutSinger::TOP:
 				m_noteGraph.draw(time, m_database, NoteGraph::TOP);

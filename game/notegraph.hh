@@ -21,6 +21,8 @@ class NoteGraph {
 	 * @param players reference to the list of singing Players
 	 */
 	void draw(double time, Database const& database, Position position = NoteGraph::FULLSCREEN);
+	void draw_new(double time, VocalTrack& vocal, Database const& database, Position position = NoteGraph::FULLSCREEN);
+
   private:
 	/// draw notebars
 	void drawNotes(std::_List_const_iterator<Player> player_it);
@@ -56,6 +58,9 @@ class NoteGraph {
 	float m_notealpha;
 	AnimValue m_nlTop, m_nlBottom;
 	Notes::const_iterator m_songit;
+	Notes::const_iterator m_vocalit_beg;
+	Notes::const_iterator m_vocalit_end;
+	int m_cur_highest, m_cur_lowest;
 	double m_time;
 	double m_max, m_min, m_noteUnit, m_baseY, m_baseX;
 	int m_cur_player;
