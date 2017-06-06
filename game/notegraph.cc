@@ -188,6 +188,22 @@ void NoteGraph::draw(double time, Database const& database, Position position) {
 
 void NoteGraph::draw_new(double time, VocalTrack& vocal, Database const& database, Position position) {
 
+	// TODO check if BETA_BOTTOM works
+	// support stretching but not moving
+	switch(position) {
+		case NoteGraph::FULLSCREEN:
+		case NoteGraph::TOP:
+		case NoteGraph::BOTTOM:
+		case NoteGraph::LEFT:
+		case NoteGraph::RIGHT:
+		case NoteGraph::BETA_TOP:
+			dimensions.stretch(0.9, 0.25).bottom(-0.05);
+			break;
+		case NoteGraph::BETA_BOTTOM:
+			dimensions.stretch(1.0, 0.25).top(0.0);
+			break;
+	}
+
 	Notes::const_iterator eof = vocal.notes.end();
 
 	if(time > m_vocalit_end->end) {
@@ -219,19 +235,17 @@ void NoteGraph::draw_new(double time, VocalTrack& vocal, Database const& databas
 
 			// TODO calculate high depending on noterange;
 			float h = 0.03;
-			float w = (it->end - it->begin) / time_span * 0.9 + h; // borders left + right == height
+			float w = (it->end - it->begin) / time_span * dimensions.w() + h; // borders left + right == height
 
 			// x - (left border == height / 2)
-			float x = -0.45 - h/2;
-			// 0.9 because we do not use the first and last 5% (0.05) of screen space
-			x += (it->begin - m_vocalit_beg->begin) / time_span * 0.9;
+			float x = dimensions.x1() - h / 2;
+			x += (it->begin - m_vocalit_beg->begin) / time_span * dimensions.w();
 
-			// dimension.h() should be 0.16
-			// * 0.9 to use only 90% of vertical space
-			float y = -1.0 * (it->note - m_cur_lowest) / noterange * dimensions.h() * 0.9;
-			// shift the middle to one half of 90%
-			// y -= 0.05 * dimensions.h();
-			if (noterange == 1) y = -0.5 * dimensions.h();
+			float y = dimensions.y2();
+			if (noterange != 1)
+				y -= dimensions.h() * (it->note - m_cur_lowest) / noterange;
+			else
+				y += dimensions.h() / 2;
 
 			drawNotebar(*texture, x , y, y, w, h);
 		}
