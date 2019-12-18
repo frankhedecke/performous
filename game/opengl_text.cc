@@ -280,8 +280,9 @@ void SvgTxtTheme::draw(std::vector<TZoomText>& _text, bool lyrics) {
 		dim.fixedHeight(m_texture_height).center(dimensions.y1());
 		dim.middle(position_x + 0.5 * dim.w());
 		TexCoords tex;
+		bool highlight = _text[i].highlight;
 		double factor = _text[i].factor;
-		if (factor > 1.0) {
+		if (highlight) {
 			LyricColorTrans lc(m_text.fill_col, m_text.stroke_col, m_text_highlight.fill_col, m_text_highlight.stroke_col);
 			dim.fixedWidth(dim.w() * factor);
 			m_opengl_text[i]->draw(dim, tex);

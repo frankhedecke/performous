@@ -15,8 +15,9 @@ struct TZoomText {
 	std::string string;
 	/// zoomfactor
 	double factor;
+	bool highlight;
 	/// constructor
-	TZoomText(std::string const& str = std::string()): string(str), factor(1.0) {}
+	TZoomText(std::string const& str = std::string()): string(str), factor(1.0), highlight(false) {}
 };
 
 /// Special theme for creating opengl themed surfaces
